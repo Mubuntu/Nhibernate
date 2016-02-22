@@ -122,7 +122,7 @@ namespace SC.DAL.Nhibernate
             var sessionFactory = Fluently.Configure()
                                .Database(MsSqlConfiguration.MsSql2012
                                .ConnectionString(c => c
-                               .FromAppSetting("SupportCenterDB_EFCodeFirst"))
+                               .FromConnectionStringWithKey("SupportCenterDB_EFCodeFirst"))
                                .ShowSql())
                                .Mappings(m => m
                                .FluentMappings.AddFromAssemblyOf<Ticket>().ExportTo(@"..\Nhibernate\Mapping"))
@@ -247,7 +247,7 @@ namespace SC.DAL.Nhibernate
                 {
                     IQuery query = session.GetNamedQuery("sp_CloseTicket");
                     query.SetInt32("ticketNumber", ticketNumber);
-                    query.UniqueResult();
+                    query.ExecuteUpdate();
                     session.Close();
                 }
             }
