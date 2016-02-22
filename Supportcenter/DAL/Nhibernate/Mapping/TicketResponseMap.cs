@@ -10,6 +10,13 @@ namespace SC.DAL.Nhibernate.Mapping
 {
     class TicketResponseMap:ClassMap<TicketResponse>
     {
-
+        public TicketResponseMap()
+        {
+            Id(tr => tr.Id);
+            Map(tr => tr.Text).Not.Nullable();
+            Map(tr => tr.Date);
+            Map(tr => tr.IsClientResponse);
+            References(tr => tr.Ticket).Not.Nullable();
+        }
     }
 }
