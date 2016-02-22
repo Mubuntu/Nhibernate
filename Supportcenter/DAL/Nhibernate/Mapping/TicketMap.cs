@@ -16,13 +16,13 @@ namespace SC.DAL.Nhibernate.Mapping
         ***worden gecompiled (aanpassing in klasse
         ***wordt niet in .xml mapping aangepast,
         ***maken we daarom gebruik van in-code 
-        ***gegenereerde mappings
+        ***gegenereerdemappings
          **/
         public TicketMap()
         {
             Id(t => t.TicketNumber);
             Map(t => t.AccountId);
-            Map(t => t.Text);
+            Map(t => t.Text).Length(100).Not.Nullable();
             Map(t => t.DateOpened);
             Map(t => t.State);
             //een lijst met ticketresponses waar de veel-zijde(*) op updates opslaat
