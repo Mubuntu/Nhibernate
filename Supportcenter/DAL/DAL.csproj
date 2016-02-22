@@ -66,6 +66,7 @@
     <Compile Include="EF\SupportCenterDbInitializer.cs" />
     <Compile Include="EF\TicketRepository.cs" />
     <Compile Include="ITicketRepository.cs" />
+    <Compile Include="Nhibernate\Mapping\HardWareTicketMap.cs" />
     <Compile Include="Nhibernate\Mapping\TicketMap.cs" />
     <Compile Include="Nhibernate\Mapping\TicketResponseMap.cs" />
     <Compile Include="Nhibernate\TicketRepository.cs" />
@@ -83,7 +84,9 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
