@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SC.DAL.Nhibernate.Mapping
 {
-    class TicketResponseMap:ClassMap<TicketResponse>
+    public class TicketResponseMap:ClassMap<TicketResponse>
     {
         public TicketResponseMap()
         {
