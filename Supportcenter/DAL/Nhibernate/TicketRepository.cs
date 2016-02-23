@@ -7,6 +7,7 @@ using SC.BL.Domain;
 using NHibernate;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
+using SC.DAL.Nhibernate.Mapping;
 
 namespace SC.DAL.Nhibernate
 {
@@ -125,7 +126,7 @@ namespace SC.DAL.Nhibernate
                                .FromConnectionStringWithKey("SupportCenterDB_EFCodeFirst"))
                                .ShowSql())
                                .Mappings(m => m
-                               .FluentMappings.AddFromAssemblyOf<Ticket>().ExportTo(@"..\Nhibernate\Mapping"))
+                               .FluentMappings.AddFromAssemblyOf<TicketMap>().ExportTo(@"..\Nhibernate\Mapping"))
                                .BuildSessionFactory();
             /*sessionFactory geeft een nullwaarde trg oplossen**/
             return sessionFactory;

@@ -8,7 +8,7 @@ using SC.BL.Domain;
 
 namespace SC.DAL.Nhibernate.Mapping
 {
-    class HardWareTicketMap:SubclassMap<HardwareTicket>
+    public class HardWareTicketMap:SubclassMap<HardwareTicket>
     {
         public HardWareTicketMap()
         {
