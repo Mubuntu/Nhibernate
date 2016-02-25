@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="SC.Domain"
+                   namespace="SC.BL.Domain">
+  <!--Mapping for class 'TicketResponse'-->
+  <class name="TicketResponse" table ="TicketResponse" discriminator-value="Ticket" lazy="false" >
+    <!-- ID mapping -->
+    <id name="Id">
+      <column name="Id"/>
+      <generator class="native"/>
+    </id>
+    <!-- simple mapping voor properties-->
+    <property name="Text" column="Text" type="string"/>
+    <property name="Date" column="Date" type="DateTime"/>
+    <property name="IsClientResponse" column="IsClientResponse" type="byte"/>
+
+    <!--many to one mapping voor Ticket-->
+    <many-to-one name="Ticket"
+                 class="Ticket"
+                 column="TicketNumber"
+                 cascade="all"/>
+  </class>
+</hibernate-mapping>

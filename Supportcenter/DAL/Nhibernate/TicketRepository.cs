@@ -1,257 +1,181 @@
-﻿using System;
+﻿using NHibernate;
+using SC.BL.Domain;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SC.BL.Domain;
-using NHibernate;
-using FluentNHibernate.Cfg;
-using FluentNHibernate.Cfg.Db;
-using SC.DAL.Nhibernate.Mapping;
 
 namespace SC.DAL.Nhibernate
 {
-    public class TicketRepository : ITicketRepository
+    public class TicketRepository:ITicketRepository
     {
-        private List<Ticket> tickets;
-        private List<TicketResponse> responses;
-        private ISessionFactory _sessionFactory;
-        public TicketRepository()
+        public BL.Domain.Ticket CreateTicket(BL.Domain.Ticket ticket)
         {
-            _sessionFactory = CreateSessionFactory();
-            Seed();
-        }
-        private void Seed()
-        {
-            tickets = new List<Ticket>();
-            responses = new List<TicketResponse>();
-
-            // Aanmaken eerste ticket met drie responses
-            Ticket t1 = new Ticket()
+            //eerst sessie openen
+            using (ISession session = NhibernateHelper.OpenSession())
             {
-                TicketNumber = tickets.Count + 1,
-                AccountId = 1,
-                Text = "Ik kan mij niet aanmelden op de webmail",
-                DateOpened = new DateTime(2012, 9, 9, 13, 5, 59),
-                State = TicketState.Closed,
-                Responses = new List<TicketResponse>()
-            };
-
-            tickets.Add(t1);
-
-            TicketResponse t1r1 = new TicketResponse()
-            {
-                Id = responses.Count + 1,
-                Ticket = t1,
-                Text = "Account is geblokkeerd",
-                Date = new DateTime(2012, 9, 9, 13, 24, 48),
-                IsClientResponse = false
-            };
-            t1.Responses.Add(t1r1);
-            responses.Add(t1r1);
-
-            TicketResponse t1r2 = new TicketResponse()
-            {
-                Id = responses.Count + 1,
-                Ticket = t1,
-                Text = "Account terug in orde en nieuw paswoord ingesteld",
-                Date = new DateTime(2012, 9, 9, 13, 29, 11),
-                IsClientResponse = false
-            };
-            t1.Responses.Add(t1r2);
-            responses.Add(t1r2);
-
-            TicketResponse t1r3 = new TicketResponse()
-            {
-                Id = responses.Count + 1,
-                Ticket = t1,
-                Text = "Aanmelden gelukt en paswoord gewijzigd",
-                Date = new DateTime(2012, 9, 10, 7, 22, 36),
-                IsClientResponse = true
-            };
-            t1.Responses.Add(t1r3);
-            responses.Add(t1r3);
-
-            t1.State = TicketState.Closed;
-
-
-            //Aanmaken tweede ticket met één response
-            Ticket t2 = new Ticket()
-            {
-                TicketNumber = tickets.Count + 1,
-                AccountId = 1,
-                Text = "Geen internetverbinding",
-                DateOpened = new DateTime(2012, 11, 5, 9, 45, 13),
-                State = TicketState.Open,
-                Responses = new List<TicketResponse>()
-            };
-
-            tickets.Add(t2);
-
-            TicketResponse t2r1 = new TicketResponse()
-            {
-                Id = responses.Count + 1,
-                Ticket = t2,
-                Text = "Controleer of de kabel goed is aangesloten",
-                Date = new DateTime(2012, 11, 5, 11, 25, 42),
-                IsClientResponse = false
-            };
-            t2.Responses.Add(t2r1);
-            responses.Add(t2r1);
-
-            t2.State = TicketState.Answered;
-
-            //Aanmaken eerste HardwareTicket
-            HardwareTicket ht1 = new HardwareTicket()
-            {
-                TicketNumber = tickets.Count + 1,
-                AccountId = 2,
-                Text = "Blue screen!",
-                DateOpened = new DateTime(2012, 12, 14, 19, 15, 32),
-                State = TicketState.Open,
-                //Responses = new List<TicketResponse>(),
-                DeviceName = "PC-123456"
-            };
-
-            tickets.Add(ht1);
-            this.CreateTickets(tickets);
-
-        }
-
-        private static ISessionFactory CreateSessionFactory()
-        {
-            var sessionFactory = Fluently.Configure()
-                               .Database(MsSqlConfiguration.MsSql2012
-                               .ConnectionString(c => c
-                               .FromConnectionStringWithKey("SupportCenterDB_EFCodeFirst"))
-                               .ShowSql())
-                               .Mappings(m => m
-                               .FluentMappings.AddFromAssemblyOf<TicketMap>().ExportTo(@"..\Nhibernate\Mapping"))
-                               .BuildSessionFactory();
-            /*sessionFactory geeft een nullwaarde trg oplossen**/
-            return sessionFactory;
-        }
-        public void CreateTickets(List<Ticket> ticketsToCreate)
-        {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                using (var transaction = session.BeginTransaction())
-                {
-                    session.SaveOrUpdate(ticketsToCreate);
-                    transaction.Commit();
-                }
-            }
-        }
-
-        public void CreateTickResponses(List<TicketResponse> TicketResponsesToCreate)
-        {
-            foreach (var ticketResponse in TicketResponsesToCreate)
-            {
-                CreateTicketResponse(ticketResponse);
-            }
-        }
-        public Ticket CreateTicket(Ticket ticket)
-        {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                using (var transaction = session.BeginTransaction())
+                //dan transactie starten
+                using (ITransaction transaction = session.BeginTransaction())
                 {
                     session.Save(ticket);
                     transaction.Commit();
+                    //transaction locks gaan open en savepointscleared
                 }
             }
             return ticket;
         }
 
-        public TicketResponse CreateTicketResponse(TicketResponse response)
+        public IEnumerable<BL.Domain.Ticket> ReadTickets()
         {
-            using (var session = _sessionFactory.OpenSession())
+            IEnumerable<Ticket> tickets;
+            using (ISession session = NhibernateHelper.OpenSession())
             {
-                using (var transaction = session.BeginTransaction())
+                IQuery query = session.CreateQuery("FROM Ticket");
+                tickets = query.Enumerable<Ticket>();
+                #region andere manieren
+                //OF STATEMENT VIA HQL MET DISJOINCT PARAMETER
+                //tickets = session.CreateCriteria<Ticket>()
+                //.Add(Restrictions.Disjunction()
+                //.Add(Restrictions.Eq("TicketNumber", "1"))
+                //.Add(Restrictions.Eq("Text", "bluescreen")))
+                //.List<Blog>();
+                //IQuery query = session.CreateQuery("FROM Ticket");
+                //tickets = (IEnumerable<Ticket>)query.List();
+                //OF
+                //tickets = (IEnumerable<Ticket>)session.CreateCriteria<Ticket>().List();
+                //OF OR STATEMENT
+                //tickets = session.CreateQuery("from Ticket t where t.TicketNumber = :ticketNumber or t.Text = :text")
+                //.SetParameter("tickNumber", ticketNumber)
+                //.SetParameter("text", "blue screen")
+                //.List<Ticket>();
+                //OF and statement
+                //tickets = session.CreateQuery("from Ticket t where t.TicketNumber = :ticketNumber and t.Text = :text")
+                //.SetParameter("tickNumber", ticketNumber)
+                //.SetParameter("text", "blue screen")
+                //.List<Ticket>();
+                #endregion
+            }
+
+            return tickets;
+        }
+
+        public BL.Domain.Ticket ReadTicket(int ticketNumber)
+        {
+            Ticket ticket;
+            using (ISession session = NhibernateHelper.OpenSession())
+            {
+                IQuery query = session.CreateQuery("FROM Ticket WHERE Ticket.TicketNumber = " + ticketNumber);
+                //query.SetParameter("ticketNumber", ticketNumber);
+                ticket = (Ticket)query.List();
+                #region andere manieren
+                //ticket = (Ticket)session.CreateCriteria<Ticket>().Add(Restrictions.Eq("TicketNumber", ticketNumber));
+                //OF
+                //IQuery query = session.CreateQuery("FROM Ticket WHERE Ticket.TicketNumber = " + ticketNumber);
+                //query.SetParameter("ticketNumber", ticketNumber);
+                //ticket = (Ticket)query.List();
+                //ticket = session.Get<Ticket>(ticketNumber);
+                //OF
+                //ticket = session.Load<Ticket>(ticketNumber);
+                #endregion
+            }
+
+
+            return ticket;
+        }
+
+        public void UpdateTicket(BL.Domain.Ticket ticket)
+        {
+            using (ISession session = NhibernateHelper.OpenSession())
+            {
+                using (ITransaction transaction = session.BeginTransaction())
                 {
-                    session.Save(response);
+
+                    session.Update(ticket);
                     transaction.Commit();
+                    //session.flush() is hier niet nodig omdat het transaction object 
+                    //met de  transaction.commit() de tabels vrij maakt en alle bestande synchroniseert met de database 
+                }
+            }
+        }
+
+        public void DeleteTicket(int ticketNumber)
+        {
+            Ticket ticket;
+            using (ISession session = NhibernateHelper.OpenSession())
+            {
+                using (ITransaction transaction = session.BeginTransaction())
+                {
+                    IQuery query = session.CreateQuery("FROM Ticket WHERE Ticket.TicketNumber = :ticketNumber");
+                    query.SetParameter("ticketNumber", ticketNumber);
+                    ticket = query.List<Ticket>()[0];
+                    session.Delete(ticket);
+                    transaction.Commit();
+                    #region andere manieren
+                    //ticket = session.Get<Ticket>(ticketNumber);
+                    //OF
+                    //ticket = session.Load<Ticket>(ticketNumber);
+                    //OF
+                    //IQuery query = session.CreateQuery("FROM Ticket WHERE Ticket.TicketNumber = :ticketNumber");
+                    //query.SetParameter("ticketNumber", ticketNumber);
+                    //ticket = query.List<Ticket>()[0];
+                    //session.Delete(ticketResponses) is niet nodig want we hebben een cascade dus alle responses worden respectievelijk verwijderd
+                    #endregion
+                }
+            }
+        }
+
+        public IEnumerable<BL.Domain.TicketResponse> ReadTicketResponsesOfTicket(int ticketNumber)
+        {
+            Ticket ticket;
+            using (ISession session = NhibernateHelper.OpenSession())
+            {
+                IQuery query = session.CreateQuery("FROM Ticket WHERE Ticket.TicketNumber = :ticketNumber");
+                query.SetParameter("ticketNumber", ticketNumber);
+                ticket = query.List<Ticket>()[0];
+                session.Close();
+                #region andere manieren
+                //ticket = session.Get<Ticket>(ticketNumber);
+                //OF
+                //ticket = session.Load<Ticket>(ticketNumber);
+                #endregion
+            }
+            return ticket.Responses;
+        }
+
+        public BL.Domain.TicketResponse CreateTicketResponse(BL.Domain.TicketResponse response)
+        {
+            using (ISession session = NhibernateHelper.OpenSession())
+            {
+                using (ITransaction transaction = session.BeginTransaction())
+                {
+                    if (response.Ticket != null)
+                    {
+                        Ticket ticket = session.Load<Ticket>(response.Ticket.TicketNumber);
+                        ticket.Responses.Add(response);
+                        session.Save(ticket);
+                        transaction.Commit();
+                        #region andere manieren
+                        //OF
+                        //Ticket ticket = session.Get<Ticket>(response.Ticket.TicketNumber);
+                        //OF
+                        //  IQuery query = session.CreateQuery("FROM Ticket WHERE Ticket.TicketNumber = :ticketNumber");
+                        //query.SetParameter("ticketNumber", response.Ticket.TicketNumber);
+                        //ticket = query.List<Ticket>()[0];
+                        #endregion
+                    }
+                    else
+                    {
+                        throw new ArgumentException("The ticketresponse has no ticket attached to it");
+                    }
                 }
             }
             return response;
         }
 
-        public void DeleteTicket(int ticketNumber)
-        {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                using (var transaction = session.BeginTransaction())
-                {
-                    Ticket ticket = session.Get<Ticket>(ticketNumber);
-                    session.Delete(ticket);
-                    transaction.Commit();
-                    session.Close();
-                }
-            }
-        }
-
-        public Ticket ReadTicket(int ticketNumber)
-        {
-            Ticket ticket;
-            using (var session = _sessionFactory.OpenSession())
-            {
-                ticket = session.Get<Ticket>(ticketNumber);
-                session.Close();
-            }
-            return ticket;
-        }
-
-        public IEnumerable<TicketResponse> ReadTicketResponsesOfTicket(int ticketNumber)
-        {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                using (var transaction = session.BeginTransaction())
-                {
-                    var responses = session.QueryOver<Ticket>()
-                                           .Fetch(t => t.Responses)
-                                           .Lazy
-                                           .Where(t => t.TicketNumber == ticketNumber);
-                    transaction.Commit();
-                    session.Close();
-                }
-            }
-            return responses;
-        }
-
-        public IEnumerable<Ticket> ReadTickets()
-        {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                var tickets = session.CreateCriteria<Ticket>();
-            }
-            return tickets;
-        }
-
-        public void UpdateTicket(Ticket ticket)
-        {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                using (var transaction = session.BeginTransaction())
-                {
-                    session.Update(ticket);
-                    transaction.Commit();
-                    session.Close();
-                }
-            }
-        }
-
         public void UpdateTicketStateToClosed(int ticketNumber)
         {
-            using (var session = _sessionFactory.OpenSession())
-            {
-                using (var transaction = session.BeginTransaction())
-                {
-                    IQuery query = session.GetNamedQuery("sp_CloseTicket");
-                    query.SetInt32("ticketNumber", ticketNumber);
-                    query.ExecuteUpdate();
-                    session.Close();
-                }
-            }
+            throw new NotImplementedException();
         }
     }
 }

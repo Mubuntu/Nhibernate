@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="SC.Domain"
+                   namespace="SC.BL.Domain">
+
+  <!-- mapping for de klasse Ticket -->
+  <class name="Ticket" table="Ticket" discriminator-value="Ticket" lazy="false" >
+    <!-- Primary key mapping-->
+    <id name="TicketNumber" column="TicketNumber" type="Int32" unsaved-value="0">
+      <generator class="native"/>
+    </id>
+    <discriminator column="Discriminator" type="string"/>
+      <!--propery mapping -->
+      <property name="AccountId" column="AccountId" type="Int32" not-null="true"></property>
+      <property name="Text" column="Text" type="String" not-null="true"></property>
+      <property name="DateOpened" column="DateOpened" type="DateTime" not-null="true"></property>
+      <property name="State" column="State" type="byte" not-null="true"></property>
+
+      <!--many to one mapping: TicketResponse -->
+      <bag name="Responses" table="TicketResponse" cascade="all-delete-orphan" lazy="false">
+        <!--foreign key van TicketResponse-->
+        <key column="TicketNumber"/>
+        <one-to-many class="TicketResponse"/>
+      </bag>
+
+      <subclass name="HardwareTicket" discriminator-value="HardwareTicket" lazy="false" >
+        <property name="DeviceName" column="DeviceName" type="String" not-null="false"></property>
+      </subclass>
+    
+  </class>
+
+</hibernate-mapping>
